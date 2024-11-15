@@ -23,7 +23,13 @@ from omnilake.tables.jobs.stack import Job, JobsTable
 from omnilake.tables.sources.stack import Source, SourcesTable
 from omnilake.tables.source_types.stack import SourceType, SourceTypesTable
 
+
+from omnilake.services.ingestion.stack import IngestionServiceStack
+from omnilake.services.responder.stack import ResponderEngineStack
+from omnilake.services.storage.basic.stack import BasicArchiveManagerStack
 from omnilake.services.storage.raw.stack import RawStorageManagerStack
+from omnilake.services.storage.vector.stack import VectorArchiveManagerStack
+
 
 
 class OmniLakeAPIStack(Stack):
@@ -47,12 +53,16 @@ class OmniLakeAPIStack(Stack):
             architecture=architecture,
             required_stacks=[
                 ArchiveTable,
+                BasicArchiveManagerStack,
                 EntriesTable,
                 InformationRequestsTable,
+                IngestionServiceStack,
                 JobsTable,
                 RawStorageManagerStack,
+                ResponderEngineStack,
                 SourcesTable,
                 SourceTypesTable,
+                VectorArchiveManagerStack,
             ],
             deployment_id=deployment_id,
             scope=scope,

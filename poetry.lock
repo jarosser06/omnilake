@@ -32,13 +32,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "aws-cdk-asset-awscli-v1"
-version = "2.2.210"
+version = "2.2.211"
 description = "A library that contains the AWS CLI for use in Lambda Layers"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "aws_cdk.asset_awscli_v1-2.2.210-py3-none-any.whl", hash = "sha256:9fed6905755243ab2cae91ca5a0bed2d56876dd1984887bd2c5f78b2e22fb5fd"},
-    {file = "aws_cdk_asset_awscli_v1-2.2.210.tar.gz", hash = "sha256:724f33edd39dd4904f947094fc61b2d2fde007b1f0d7a0dab277a9e25c2375f4"},
+    {file = "aws_cdk.asset_awscli_v1-2.2.211-py3-none-any.whl", hash = "sha256:8237a2a2a1d38cb5982d6ec0dbf1d5c7a4b62c2071d1d058b03440b3af401076"},
+    {file = "aws_cdk_asset_awscli_v1-2.2.211.tar.gz", hash = "sha256:d3fc198b4673b6c2b5978192f4b4764352bb14b5b4b85a96dedc0f47c768c2f3"},
 ]
 
 [package.dependencies]
@@ -96,13 +96,13 @@ typeguard = ">=2.13.3,<5.0.0"
 
 [[package]]
 name = "aws-cdk-lib"
-version = "2.166.0"
+version = "2.167.0"
 description = "Version 2 of the AWS Cloud Development Kit library"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "aws_cdk_lib-2.166.0-py3-none-any.whl", hash = "sha256:d55b6a10685e80c6736b798b60da40a6e561285501296579e359eca3e761f43e"},
-    {file = "aws_cdk_lib-2.166.0.tar.gz", hash = "sha256:30aff4086f274ec8788b6fc63d9d3bd24d0ff541c5d8d4d4f7c7fd810b9f435e"},
+    {file = "aws_cdk_lib-2.167.0-py3-none-any.whl", hash = "sha256:0af251de961332ab0a54c0c1b31d1cc26677ddd6be7b5f94ee38477a0b541cc4"},
+    {file = "aws_cdk_lib-2.167.0.tar.gz", hash = "sha256:2873d1285ce6ceae810783db16d1a9f6533604b995237da05bdc5ba69b9af5f5"},
 ]
 
 [package.dependencies]
@@ -117,17 +117,17 @@ typeguard = ">=2.13.3,<4.3.0"
 
 [[package]]
 name = "boto3"
-version = "1.35.57"
+version = "1.35.62"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.57-py3-none-any.whl", hash = "sha256:9edf49640c79a05b0a72f4c2d1e24dfc164344b680535a645f455ac624dc3680"},
-    {file = "boto3-1.35.57.tar.gz", hash = "sha256:db58348849a5af061f0f5ec9c3b699da5221ca83354059fdccb798e3ddb6b62a"},
+    {file = "boto3-1.35.62-py3-none-any.whl", hash = "sha256:e6574047701ab009c2b2bb17b530a3a2fb34de8698b77f8bbb34dd0c9286c117"},
+    {file = "boto3-1.35.62.tar.gz", hash = "sha256:f80eefe7506aa01799b1027d03eddfd3c4a60548d6db5c32f139e1dec9f3f4f5"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.57,<1.36.0"
+botocore = ">=1.35.62,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -136,13 +136,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.57"
+version = "1.35.62"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.57-py3-none-any.whl", hash = "sha256:92ddd02469213766872cb2399269dd20948f90348b42bf08379881d5e946cc34"},
-    {file = "botocore-1.35.57.tar.gz", hash = "sha256:d96306558085baf0bcb3b022d7a8c39c93494f031edb376694d2b2dcd0e81327"},
+    {file = "botocore-1.35.62-py3-none-any.whl", hash = "sha256:4c3960a33289371d96eba5116364c41e6b848b5afbed3a43f5d8c7ba36f55e1d"},
+    {file = "botocore-1.35.62.tar.gz", hash = "sha256:9df762294d5c727d9ea1c48b98579729a0ba40fd317c3262a6b8d8e12fb67489"},
 ]
 
 [package.dependencies]
@@ -453,13 +453,13 @@ files = [
 
 [[package]]
 name = "jsii"
-version = "1.104.0"
+version = "1.105.0"
 description = "Python client for jsii runtime"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "jsii-1.104.0-py3-none-any.whl", hash = "sha256:c1da4d21be208db7dd341bc8fd9c4cdbaa5ff1a3cec7ce4f5f4e3ce89bc949cc"},
-    {file = "jsii-1.104.0.tar.gz", hash = "sha256:1e9b3e49797450258d473c16052258f2291bde4dd410d30c21e325c000c10a0c"},
+    {file = "jsii-1.105.0-py3-none-any.whl", hash = "sha256:8888088479b449db6d8e3a7df25434ec4580bf4fc13f4f952e9db5f2a3fc0c0f"},
+    {file = "jsii-1.105.0.tar.gz", hash = "sha256:435682d509e628e6f8a765b017102e6fcd553f4d0f6b3417b3f7eb295c2e0d1f"},
 ]
 
 [package.dependencies]
@@ -468,7 +468,7 @@ cattrs = ">=1.8,<24.2"
 importlib-resources = ">=5.2.0"
 publication = ">=0.0.3"
 python-dateutil = "*"
-typeguard = ">=2.13.3,<4.3.0"
+typeguard = ">=2.13.3,<4.5.0"
 typing-extensions = ">=3.8,<5.0"
 
 [[package]]

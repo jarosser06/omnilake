@@ -62,6 +62,7 @@ class VectorArchiveManagerStack(Stack):
                 JobsTable,
                 RawStorageManagerStack,
                 SourcesTable,
+                VectorStoresTable,
                 VectorStoreChunksTable,
                 VectorStoreQueriesTable,
                 VectorStoreTagsTable,
