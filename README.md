@@ -20,11 +20,6 @@ OmniLake is a Python/AWS Framework that enables the development of enterprise-gr
 - Provides enterprise-grade data management
 - Maintains control over data
 
-### Requirements
-- Python 3.12
-- CDK
-- AWS Account (Max managed policies limit must be bumped to 20)
-
 ### ⚠️ Experimental Feature Warning ️⚠️
 
 The automatic archive segmentation feature (which attempts to split and categorize information into purpose-built vector stores) is very experimental. While promising for knowledge organization, it's not yet production-ready and should be used with caution in non-critical environments.
@@ -69,7 +64,9 @@ To utilize Omnilake effectively, you should include it as a dependency for your 
 
 - Python 3.12 or higher
 - Poetry (Python package manager)
+- [Da Vinci Framework](https://github.com/jarosser06/da-vinci)
 - AWS CLI configured with appropriate credentials
+- AWS Account (Max managed policies limit must be bumped to 20)
 
 ### Installation
 
