@@ -1,168 +1,943 @@
-from datetime import datetime
-from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Union
 
+from omnilake.client.client import (
+    RequestAttributeType,
+    RequestBodyAttribute,
+    RequestBody,
+)
 
-@dataclass
-class RequestSuperclass:
-    def to_dict(self):
+from omnilake.client.construct_request_definitions import (
+    BasicArchiveConfiguration,
+    VectorArchiveConfiguration,
+    BasicLookup,
+    DirectEntryLookup,
+    DirectSourceLookup,
+    RelatedRequestEntriesLookup,
+    RelatedRequestSourcesLookup,
+    SimpleResponseConfig,
+    SummarizationProcessor,
+    VectorLookup,
+)
+
+
+class AddEntry(RequestBody):
+    """
+    Add an entry to the lake. If the destination_archive is provided, the entry will be
+    sent to be indexed in the archive.  It is up to the implementation of the archive as
+    to when and how the entry is indexed.
+
+    Keyword Arguments:
+    content -- the content of the entry
+    sources -- the sources used to generate the content
+    destination_archive_id -- the archive to add the entry to
+    effective_on -- the effective date of the entry
+    original_of_source -- the source of the entry
+
+    Example:
+    ```
+    AddEntry(
+        content='This is a test entry',
+        sources=['source1', 'source2'],
+        archive_id='test_archive',
+        effective_on='2021-01-01T00:00:00Z',
+        original_of_source='source1',
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'content',
+        ),
+
+        RequestBodyAttribute(
+            'sources',
+            attribute_type=RequestAttributeType.LIST,
+        ),
+
+        RequestBodyAttribute(
+            'destination_archive_id',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'effective_on',
+            attribute_type=RequestAttributeType.DATETIME,
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'original_of_source',
+            optional=True,
+        ),
+    ]
+
+    path = '/add_entry'
+
+    def __init__(self, content: str, sources: list, destination_archive_id: Optional[str] = None,
+                 effective_on: Optional[str] = None, original_of_source: Optional[str] = None):
         """
-        Return the object as a dictionary.
+        Initialize the AddEntry request
+
+        Keyword Arguments:
+        content -- the content of the entry
+        sources -- the sources used to generate the content
+        archive_id -- the archive to add the entry to
+        effective_on -- the effective date of the entry
+        original_of_source -- the source of the entry
+
+        Example:
+        ```
+        AddEntry(
+            content='This is a test entry',
+            sources=['source1', 'source2'],
+            archive_id='test_archive',
+            effective_on='2021-01-01T00:00:00Z',
+            original_of_source='source1',
+        )
+        ```
         """
-        return asdict(self)
+        super().__init__(
+            content=content,
+            sources=sources,
+            destination_archive_id=destination_archive_id,
+            effective_on=effective_on,
+            original_of_source=original_of_source,
+        )
 
 
-@dataclass
-class AddEntry(RequestSuperclass):
-    content: str
-    sources: List[str]
-    archive_id: Optional[str] = None
-    effective_on: Optional[str] = None # will be set to time of insertion if not provided
-    original_source: Optional[str] = None
-    summarize: Optional[bool] = False
+class AddSource(RequestBody):
+    """
+    Adds a source to the lake
+
+    Keyword Arguments:
+    source_type -- the type of source
+    source_arguments -- the arguments for the source
+
+    Example:
+    ```
+    AddSource(
+        source_type='test_source',
+        source_arguments={
+            'arg1': 'value1',
+            'arg2': 'value2'
+        }
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'source_type',
+        ),
+
+        RequestBodyAttribute(
+            'source_arguments',
+            attribute_type=RequestAttributeType.OBJECT,
+        )
+    ]
+
+    path = '/add_source'
+
+    def __init__(self, source_type: str, source_arguments: Dict):
+        """
+        Initialize the AddSource request
+
+        Keyword Arguments:
+        source_type -- the type of source
+        source_arguments -- the arguments for the source
+
+        Example:
+        ```
+        AddSource(
+            source_type='test_source',
+            source_arguments={
+                'arg1': 'value1',
+                'arg2': 'value2'
+            }
+        )
+        ```
+        """
+        super().__init__(
+            source_type=source_type,
+            source_arguments=source_arguments,
+        )
 
 
-@dataclass
-class AddSource(RequestSuperclass):
-    source_type: str
-    source_arguments: Dict
+class CreateArchive(RequestBody):
+    """
+    Create an archive in the lake
+
+    Keyword Arguments:
+    archive_id -- the id of the archive
+    configuration -- the configuration of the archive
+    description -- the description of the archive
+
+    Example:
+    ```
+    CreateArchive(
+        archive_id='test_archive',
+        configuration=BasicArchiveConfiguration(
+            archive_type='BASIC',
+            source_types=['source1', 'source2'],
+        ),
+        description='This is a test archive'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'archive_id',
+        ),
+
+        RequestBodyAttribute(
+            'configuration',
+            attribute_type=RequestAttributeType.OBJECT,
+            supported_request_body_types=[BasicArchiveConfiguration, VectorArchiveConfiguration],
+        ),
+
+        RequestBodyAttribute(
+            'description',
+            optional=True,
+        ),
+    ]
+
+    path = '/create_archive'
+
+    def __init__(self, archive_id: str, configuration: Union[Dict, BasicArchiveConfiguration, VectorArchiveConfiguration],
+                 description: Optional[str] = None):
+        """
+        Initialize the CreateArchive request
+
+        Keyword Arguments:
+        archive_id -- the id of the archive
+        configuration -- the configuration of the archive
+        description -- the description of the archive
+
+        Example:
+        ```
+        CreateArchive(
+            archive_id='test_archive',
+            configuration=BasicArchiveConfiguration(),
+            description='This is a test archive'
+        )
+        ```
+        """
+        if not isinstance(configuration, dict):
+            configuration = configuration.to_dict()
+
+        super().__init__(
+            archive_id=archive_id,
+            configuration=configuration,
+            description=description,
+        )
 
 
-@dataclass
-class CreateArchive(RequestSuperclass):
-    archive_id: str
-    description: str
-    retain_latest_originals_only: Optional[bool] = True # whether to retain only the latest original entries in the archive
-    storage_type: Optional[str] = 'VECTOR' # VECTOR or BASIC
-    tag_hint_instructions: Optional[str] = None # instructions for tagging entries ingested into the archive, only applies to VECTOR archives
+class CreateSourceType(RequestBody):
+    """
+    Create a source type in the lake
+
+    Keyword Arguments:
+    name -- the name of the source type
+    required_fields -- the required fields for the source type
+    description -- the description of the source type
+
+    Example:
+    ```
+    CreateSourceType(
+        name='test_source_type',
+        required_fields=['field1', 'field2'],
+        description='This is a test source type'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'name',
+        ),
+
+        RequestBodyAttribute(
+            'required_fields',
+            attribute_type=RequestAttributeType.LIST,
+        ),
+
+        RequestBodyAttribute(
+            'description',
+            optional=True,
+        )
+    ]
+
+    path = '/create_source_type'
+
+    def __init__(self, name: str, required_fields: List, description: Optional[str] = None):
+        """
+        Initialize the CreateSourceType request
+
+        Keyword Arguments:
+        name -- the name of the source type
+        required_fields -- the required fields for the source type
+        description -- the description of the source type
+
+        Example:
+        ```
+        CreateSourceType(
+            name='test_source_type',
+            required_fields=['field1', 'field2'],
+            description='This is a test source type'
+        )
+        ```
+        """
+        super().__init__(
+            name=name,
+            required_fields=required_fields,
+            description=description,
+        )
 
 
-@dataclass
-class CreateSourceType(RequestSuperclass):
-    name: str
-    required_fields: List[str] # list of required field names, used to generate the source ID
-    description: str = None
+class DescribeArchive(RequestBody):
+    """
+    Describe an archive in the lake
+
+    Keyword Arguments:
+    archive_id -- the id of the archive
+
+    Example:
+    ```
+    DescribeArchive(
+        archive_id='test_archive',
+        archive_type='BASIC'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'archive_id',
+        ),
+    ]
+
+    path = '/describe_archive'
+
+    def __init__(self, archive_id: str):
+        """
+        Initialize the DescribeArchive request
+
+        Keyword Arguments:
+        archive_id -- the id of the archive
+
+        Example:
+        ```
+        DescribeArchive(
+            archive_id='test_archive',
+        )
+        ```
+        """
+        super().__init__(
+            archive_id=archive_id,
+        )
 
 
-@dataclass
-class DeleteEntry(RequestSuperclass):
-    entry_id: str
-    force: Optional[bool] = False
+class DescribeEntry(RequestBody):
+    """
+    Describe an entry in the lake
+
+    Keyword Arguments:
+    entry_id -- the id of the entry
+
+    Example:
+    ```
+    DescribeEntry(
+        entry_id='test_entry'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'entry_id',
+        )
+    ]
+
+    path = '/describe_entry'
+
+    def __init__(self, entry_id: str):
+        """
+        Initialize the DescribeEntry request
+
+        Keyword Arguments:
+        entry_id -- the id of the entry
+
+        Example:
+        ```
+        DescribeEntry(
+            entry_id='test_entry'
+        )
+        ```
+        """
+        super().__init__(
+            entry_id=entry_id,
+        )
 
 
-@dataclass
-class DeleteSource(RequestSuperclass):
-    source_id: str
-    source_type: str
-    force: Optional[bool] = False
+class DescribeJob(RequestBody):
+    """
+    Describe a job in the lake
+
+    Keyword Arguments:
+    job_id -- the id of the job
+    job_type -- the type of the job
+
+    Example:
+    ```
+    DescribeJob(
+        job_id='test_job',
+        job_type='test_job_type'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'job_id',
+        ),
+
+        RequestBodyAttribute(
+            'job_type',
+        )
+    ]
+
+    path = '/describe_job'
+
+    def __init__(self, job_id: str, job_type: str):
+        """
+        Initialize the DescribeJob request
+
+        Keyword Arguments:
+        job_id -- the id of the job
+        job_type -- the type of the job
+
+        Example:
+        ```
+        DescribeJob(
+            job_id='test_job',
+            job_type='test_job_type'
+        )
+        ```
+        """
+        super().__init__(
+            job_id=job_id,
+            job_type=job_type,
+        )
 
 
-@dataclass
-class DescribeArchive(RequestSuperclass):
-    archive_id: str
+class DescribeSource(RequestBody):
+    """
+    Describe a source in the lake
+
+    Keyword Arguments:
+    source_id -- the id of the source
+    source_type -- the type of the source
+
+    Example:
+    ```
+    DescribeSource(
+        source_id='test_source',
+        source_type='test_source_type'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'source_id',
+        ),
+
+        RequestBodyAttribute(
+            'source_type',
+        )
+    ]
+
+    path = '/describe_source'
+
+    def __init__(self, source_id: str, source_type: str):
+        """
+        Initialize the DescribeSource request
+
+        Keyword Arguments:
+        source_id -- the id of the source
+        source_type -- the type of the source
+
+        Example:
+        ```
+        DescribeSource(
+            source_id='test_source',
+            source_type='test_source_type'
+        )
+        ```
+        """
+        super().__init__(
+            source_id=source_id,
+            source_type=source_type,
+        )
 
 
-@dataclass
-class DescribeEntry(RequestSuperclass):
-    entry_id: str
+class DescribeSourceType(RequestBody):
+    """
+    Describe a source type in the lake
+
+    Keyword Arguments:
+    name -- the name of the source type
+
+    Example:
+    ```
+    DescribeSourceType(
+        name='test_source_type'
+    )
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'name',
+        )
+    ]
+
+    path = '/describe_source_type'
+
+    def __init__(self, name: str):
+        """
+        Initialize the DescribeSourceType request
+
+        Keyword Arguments:
+        name -- the name of the source type
+
+        Example:
+        ```
+        DescribeSourceType(
+            name='test_source_type'
+        )
+        """
+        super().__init__(
+            name=name,
+        )
 
 
-@dataclass
-class DescribeJob(RequestSuperclass):
-    job_id: str
-    job_type: str
+class DescribeLakeRequest(RequestBody):
+    """
+    Describe a lake request in the lake
+
+    Keyword Arguments:
+    request_id -- the id of the request
+
+    Example:
+    ```
+    DescribeLakeRequest(
+        request_id='test_request'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'lake_request_id',
+        )
+    ]
+
+    path = '/describe_lake_request'
+
+    def __init__(self, lake_request_id: str):
+        """
+        Initialize the DescribeLakeRequest request
+
+        Keyword Arguments:
+        lake_request_id -- the id of the request
+
+        Example:
+        ```
+        DescribeLakeRequest(
+            lake_request_id='test_request'
+        )
+        """
+        super().__init__(
+            lake_request_id=lake_request_id,
+        )
 
 
-@dataclass
-class DescribeSource(RequestSuperclass):
-    source_id: str
-    source_type: str
+class GetEntry(RequestBody):
+    """
+    Get an entry from the lake
+
+    Keyword Arguments:
+    entry_id -- the id of the entry
+
+    Example:
+    ```
+    GetEntry(
+        entry_id='test_entry'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'entry_id',
+        )
+    ]
+
+    path = '/get_entry'
+
+    def __init__(self, entry_id: str):
+        """
+        Initialize the GetEntry request
+
+        Keyword Arguments:
+        entry_id -- the id of the entry
+
+        Example:
+        ```
+        GetEntry(
+            entry_id='test_entry'
+        )
+        """
+        super().__init__(
+            entry_id=entry_id,
+        )
 
 
-@dataclass
-class DescribeSourceType(RequestSuperclass):
-    name: str
+class IndexEntry(RequestBody):
+    """
+    Index an existing entry into an existing archive
+
+    Keyword Arguments:
+    archive_id -- the id of the archive
+    entry_id -- the id of the entry
+
+    Example:
+    ```
+    IndexEntry(
+        archive_id='test_archive',
+        entry_id='test_entry'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'archive_id',
+        ),
+
+        RequestBodyAttribute(
+            'entry_id',
+        )
+    ]
+
+    path = '/index_entry'
+
+    def __init__(self, archive_id: str, entry_id: str):
+        """
+        Initialize the IndexEntry request
+
+        Keyword Arguments:
+        archive_id -- the id of the archive
+        entry_id -- the id of the entry
+
+        Example:
+        ```
+        IndexEntry(
+            archive_id='test_archive',
+            entry_id='test_entry'
+        )
+        """
+        super().__init__(
+            archive_id=archive_id,
+            entry_id=entry_id,
+        )
 
 
-@dataclass
-class DescribeRequest(RequestSuperclass):
-    request_id: str
+class LakeRequest(RequestBody):
+    """
+    Submit a request to the lake
+
+    Keyword Arguments:
+    lookup_instructions -- the lookup instructions for the request
+    processing_instructions -- the processing instructions for the request
+    response_config -- the response configuration for the request
+
+    Example:
+    ```
+    SubmitLakeRequest(
+        lookup_instructions=[
+            BasicLookup(
+                archive_id='test_archive',
+                max_entries=20,
+            ),
+        ],
+        processing_instructions=SummarizationProcessor(
+            include_source_metadata=True,
+        ),
+        response_config=SimpleResponseConfig(
+            destination_archive_id='test_destination_archive'
+            goal='What was the result of ...'
+        )
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'lookup_instructions',
+            attribute_type=RequestAttributeType.OBJECT_LIST,
+            supported_request_body_types=[BasicLookup, DirectEntryLookup, DirectSourceLookup, RelatedRequestEntriesLookup, RelatedRequestSourcesLookup, VectorLookup],
+        ),
+
+        # Name is used as a reference for chained requests
+        RequestBodyAttribute(
+            'name',
+            attribute_type=RequestAttributeType.STRING,
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'processing_instructions',
+            attribute_type=RequestAttributeType.OBJECT,
+            supported_request_body_types=SummarizationProcessor,
+        ),
+
+        RequestBodyAttribute(
+            'response_config',
+            attribute_type=RequestAttributeType.OBJECT,
+            supported_request_body_types=SimpleResponseConfig,
+            default={},
+            optional=True,
+        )
+    ]
+
+    def __init__(self, lookup_instructions: List[Union[Dict, BasicLookup, DirectEntryLookup, DirectSourceLookup, RelatedRequestEntriesLookup, RelatedRequestSourcesLookup, VectorLookup]],
+                    processing_instructions: Union[Dict, SummarizationProcessor],
+                    response_config: Optional[Union[Dict, SimpleResponseConfig]] = None):
+            """
+            Initialize the LakeRequest Object
+    
+            Keyword Arguments:
+            name -- the name of the request, this is used as a local reference for chained requests
+            lookup_instructions -- the lookup instructions for the request
+            processing_instructions -- the processing instructions for the request
+            response_config -- the response configuration for the request
+    
+            Example:
+            ```
+            SubmitLakeRequest(
+                lookup_instructions=[
+                    BasicLookup(
+                        archive_id='test_archive',
+                        max_entries=20,
+                    ),
+                ],
+                processing_instructions=SummarizationProcessor(
+                    include_source_metadata=True,
+                ),
+                response_config=SimpleResponseConfig(
+                    destination_archive_id='test_destination_archive'
+                    goal='What was the result of ...'
+                )
+            )
+            """
+            flt_lookup_instructions = []
+
+            for lookup_instruction in lookup_instructions:
+                if isinstance(lookup_instruction, RequestBody):
+                    lookup_instruction = lookup_instruction.to_dict()
+
+                flt_lookup_instructions.append(lookup_instruction)
+
+            flt_processing_instructions = processing_instructions
+
+            if isinstance(processing_instructions, RequestBody):
+                flt_processing_instructions = processing_instructions.to_dict()
+    
+            flt_response_config = response_config or {}
+
+            if response_config and isinstance(response_config, RequestBody):
+                flt_response_config = response_config.to_dict()
+    
+            super().__init__(
+                lookup_instructions=flt_lookup_instructions,
+                processing_instructions=flt_processing_instructions,
+                response_config=flt_response_config,
+            )
 
 
-@dataclass
-class GetEntry(RequestSuperclass):
-    entry_id: str
+class ListEntries(RequestBody):
+    """
+    List entries in the lake
+
+    Keyword Arguments:
+    archive_id -- the id of the archive
+    limit -- the limit of entries to return
+    next_token -- the next token for pagination
+
+    Example:
+    ```
+    ListEntries(
+        archive_id='test_archive',
+        limit=25,
+        next_token='next_token'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'archive_id',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'limit',
+            attribute_type=RequestAttributeType.INTEGER,
+            default=25,
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'next_token',
+            optional=True,
+        )
+    ]
+
+    path = '/list_entries'
+
+    def __init__(self, archive_id: Optional[str] = None, limit: Optional[int] = 25, next_token: Optional[str] = None):
+        """
+        Initialize the ListEntries request
+
+        Keyword Arguments:
+        archive_id -- the id of the archive
+        limit -- the limit of entries to return
+        next_token -- the next token for pagination
+
+        Example:
+        ```
+        ListEntries(
+            archive_id='test_archive',
+            limit=25,
+            next_token='next_token'
+        )
+        """
+        super().__init__(
+            archive_id=archive_id,
+            limit=limit,
+            next_token=next_token,
+        )
 
 
-@dataclass
-class IndexEntry(RequestSuperclass):
-    archive_id: str
-    entry_id: str
+class ListProvisionedArchives(RequestBody):
+    """
+    List provisioned archives in the lake
+
+    Keyword Arguments:
+    limit -- the limit of archives to return
+    next_token -- the next token for pagination
+
+    Example:
+    ```
+    ListProvisionedArchives(
+        limit=25,
+        next_token='next_token'
+    )
+    ```
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'limit',
+            attribute_type=RequestAttributeType.INTEGER,
+            default=25,
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'next_token',
+            optional=True,
+        )
+    ]
+    path = '/list_archives'
 
 
-@dataclass
-class BasicInformationRetrievalRequest:
-    archive_id: str
-    max_entries: int
-    prioritize_tags: Optional[List[str]] = None # These are calculated by the system if not provided
-    request_type: str = 'BASIC'
+class SubmitLakeRequest(LakeRequest):
+    path = '/submit_lake_request'
+
+    def __init__(self, lookup_instructions: List[Union[Dict, BasicLookup, DirectEntryLookup, DirectSourceLookup, RelatedRequestEntriesLookup, RelatedRequestSourcesLookup, VectorLookup]],
+                    processing_instructions: Union[Dict, SummarizationProcessor],
+                    response_config: Optional[Union[Dict, SimpleResponseConfig]] = None):
+        """
+        Initialize the SubmitLakeRequest request
+
+        Keyword Arguments:
+        lookup_instructions -- the lookup instructions for the request
+        processing_instructions -- the processing instructions for the request
+        response_config -- the response configuration for the request
+
+        Example:
+        ```
+        SubmitLakeRequest(
+            lookup_instructions=[
+                BasicLookup(
+                    archive_id='test_archive',
+                    max_entries=20,
+                ),
+            ],
+            processing_instructions=SummarizationProcessor(
+                include_source_metadata=True,
+            ),
+            response_config=SimpleResponseConfig(
+                destination_archive_id='test_destination_archive'
+                goal='What was the result of ...'
+            )
+        )
+        """
+
+        super().__init__(
+            lookup_instructions=lookup_instructions,
+            processing_instructions=processing_instructions,
+            response_config=response_config,
+        )
 
 
-@dataclass
-class RelatedInformationRetrievalRequest:
-    related_request_id: str
-    request_type: str = 'RELATED'
+class SubmitLakeRequestChain(RequestBody):
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'requests',
+            attribute_type=RequestAttributeType.OBJECT_LIST,
+            supported_request_body_types=[LakeRequest],
+        )   
+    ]
 
+    path = '/submit_lake_request_chain'
 
-@dataclass
-class VectorInformationRetrievalRequest:
-    archive_id: str
-    max_entries: int # Must always be set by the requester
-    query_string: str = None
-    prioritize_tags: Optional[List[str]] = None # These are calculated by the system if not provided
-    request_type: str = 'VECTOR'
+    def __init__(self, requests: List[Union[Dict, LakeRequest]]):
+        """
+        Initialize the SubmitLakeRequestChain request
 
+        Keyword Arguments:
+        requests -- the requests to submit
 
-@dataclass
-class InformationRequest(RequestSuperclass):
-    goal: str
-    retrieval_requests: List[Union[Dict, BasicInformationRetrievalRequest, RelatedInformationRetrievalRequest, VectorInformationRetrievalRequest]]
-    include_source_metadata: Optional[bool] = False
-    resource_names: Optional[List[str]] = None
-    responder_model_id: Optional[str] = None # system default used if not provided
-    responder_prompt: Optional[str] = None # system default used if not provided
-    summarization_algorithm: Optional[str] = 'STANDARD'
-    summarization_prompt: Optional[str] = None # system default used if not provided
-    summarization_model_id: Optional[str] = None # system default used if not provided
+        Example:
+        ```
+        SubmitLakeRequestChain(
+            requests=[
+                LakeRequest(
+                    lookup_instructions=[
+                        BasicLookup(
+                            archive_id='test_archive',
+                            max_entries=20,
+                        ),
+                    ],
+                    processing_instructions=SummarizationProcessor(
+                        include_source_metadata=True,
+                    ),
+                    response_config=SimpleResponseConfig(
+                        destination_archive_id='test_destination_archive'
+                        goal='What was the result of ...'
+                    )
+                )
+            ]
+        )
+        """
+        flt_requests = []
 
-    def __post_init__(self):
-        normalized_requests = []
+        for request in requests:
+            if isinstance(request, RequestBody):
+                request = request.to_dict()
 
-        for req in self.retrieval_requests:
-            if isinstance(req, dict):
-                normalized_requests.append(req)
+            flt_requests.append(request)
 
-            else:
-                normalized_requests.append(asdict(req))
-
-        self.requests = normalized_requests
-
-
-@dataclass
-class ScoreResponse(RequestSuperclass):
-    request_id: str
-    score: float
-    score_comment: Optional[str] = None
-
-
-@dataclass
-class UpdateArchive(RequestSuperclass):
-    archive_id: str
-    description: str = None
-    tag_hint_instructions: Optional[str] = None
-
-
-@dataclass
-class UpdateEntry(RequestSuperclass):
-    entry_id: str
-    content: str
+        super().__init__(
+            requests=flt_requests,
+        )

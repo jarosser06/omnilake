@@ -1,9 +1,30 @@
 '''
 Handles the job API
 '''
-from omnilake.api.runtime.construct import ChildAPI, Route
+from da_vinci.core.immutable_object import (
+    ObjectBody,
+    ObjectBodySchema,
+    SchemaAttribute,
+    SchemaAttributeType,
+)
+
+from omnilake.api.runtime.base import ChildAPI, Route
 
 from omnilake.tables.jobs.client import JobsClient
+
+
+class DescribeJobSchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='job_type',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='job_id',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
 
 
 class JobsAPI(ChildAPI):
@@ -11,10 +32,11 @@ class JobsAPI(ChildAPI):
         Route(
             path='/describe_job',
             method_name='describe_job',
+            request_body_schema=DescribeJobSchema,
         ),
     ]
 
-    def describe_job(self, job_type: str, job_id: str):
+    def describe_job(self, request_body: ObjectBody):
         """
         Describe a job
 
@@ -22,6 +44,9 @@ class JobsAPI(ChildAPI):
         job_type -- The job type
         job_id -- The job ID
         """
+        job_type = request_body["job_type"]
+
+        job_id = request_body["job_id"]
 
         jobs = JobsClient()
 
@@ -29,7 +54,7 @@ class JobsAPI(ChildAPI):
 
         if not job:
             return self.respond(
-                body='Job not found',
+                body={'message': 'job not found'},
                 status_code=404,
             )
 

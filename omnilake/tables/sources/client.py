@@ -1,5 +1,5 @@
 from datetime import datetime, UTC as utc_tz
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 from uuid import uuid4
 
 from da_vinci.core.orm import (
@@ -58,6 +58,29 @@ class Source(TableObject):
             optional=True,
         ),
     ]
+
+    def __init__(self, source_type: str, source_id: Optional[str] = None, added_on: Optional[datetime] = None,
+                 attribute_key: Optional[str] = None, latest_content_entry_id: Optional[str] = None,
+                 source_arguments: Optional[Dict] = None):
+        """
+        Initialize a Source object
+
+        Keyword Arguments:
+            source_type -- The category of the source.
+            source_id -- The location ID of the source.
+            added_on -- The date and time the source was added to the Omnilake.
+            attribute_key -- The unique key of the source, created by combining the source attributes.
+            latest_content_entry_id -- The latest content entry ID of the source.
+            source_arguments -- Information about the source.
+        """
+        super().__init__(
+            source_type=source_type,
+            source_id=source_id,
+            added_on=added_on,
+            attribute_key=attribute_key,
+            latest_content_entry_id=latest_content_entry_id,
+            source_arguments=source_arguments,
+        )
 
 
 class SourcesScanDefinition(TableScanDefinition):

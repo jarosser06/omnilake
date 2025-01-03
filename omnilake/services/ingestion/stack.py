@@ -14,19 +14,21 @@ from da_vinci_cdk.stack import Stack
 from da_vinci_cdk.constructs.access_management import ResourceAccessRequest
 from da_vinci_cdk.constructs.base import resource_namer
 from da_vinci_cdk.constructs.event_bus import EventBusSubscriptionFunction
-from da_vinci_cdk.constructs.global_setting import GlobalSetting, SettingType
+from da_vinci_cdk.constructs.global_setting import GlobalSetting, GlobalSettingType
 
-from da_vinci_cdk.framework_stacks.event_bus.stack import EventBusStack
-
-from omnilake.tables.archives.stack import Archive, ArchiveTable
+from omnilake.tables.provisioned_archives.stack import Archive, ProvisionedArchivesTable
 from omnilake.tables.entries.stack import Entry, EntriesTable
 from omnilake.tables.jobs.stack import Job, JobsTable
+from omnilake.tables.registered_request_constructs.stack import (
+    RegisteredRequestConstructsTable,
+    RegisteredRequestConstruct,
+)
 from omnilake.tables.sources.stack import Source, SourcesTable
 
-from omnilake.services.storage.raw.stack import RawStorageManagerStack
+from omnilake.services.raw_storage_manager.stack import LakeRawStorageManagerStack
 
 
-class IngestionServiceStack(Stack):
+class LakeIngestionServiceStack(Stack):
     def __init__(self, app_name: str, app_base_image: str, architecture: str,
                  deployment_id: str, stack_name: str, scope: Construct):
         """
@@ -45,15 +47,17 @@ class IngestionServiceStack(Stack):
             app_name=app_name,
             app_base_image=app_base_image,
             architecture=architecture,
-            required_stacks=[
-                ArchiveTable,
-                EntriesTable,
-                EventBusStack,
-                JobsTable,
-                SourcesTable,
-                RawStorageManagerStack,
-            ],
             deployment_id=deployment_id,
+            requires_event_bus=True,
+            requires_exceptions_trap=True,
+            required_stacks=[
+                EntriesTable,
+                JobsTable,
+                LakeRawStorageManagerStack,
+                ProvisionedArchivesTable,
+                RegisteredRequestConstructsTable,
+                SourcesTable,
+            ],
             scope=scope,
             stack_name=stack_name,
         )
@@ -65,7 +69,7 @@ class IngestionServiceStack(Stack):
         self.inbound_processor = EventBusSubscriptionFunction(
             base_image=self.app_base_image,
             construct_id='inbound-processor',
-            event_type='add_entry',
+            event_type='omnilake_add_entry',
             description='Processes the new entries and adds them to the storage.',
             entry=self.runtime_path,
             index='entry_creation.py',
@@ -104,6 +108,11 @@ class IngestionServiceStack(Stack):
                     policy_name='read_write'
                 ),
                 ResourceAccessRequest(
+                    resource_type=ResourceType.TABLE,
+                    resource_name=RegisteredRequestConstruct.table_name,
+                    policy_name='read',
+                ),
+                ResourceAccessRequest(
                     resource_name=Source.table_name,
                     resource_type=ResourceType.TABLE,
                     policy_name='read_write',
@@ -115,9 +124,9 @@ class IngestionServiceStack(Stack):
 
         self.validate_content_uniqueness = GlobalSetting(
             description='Validates the content is unique before adding it to the storage. Uses the sha256 hash of the entry content.',
-            namespace='ingestion',
+            namespace='omnilake::ingestion',
             setting_key='enforce_content_uniqueness',
             setting_value='False',
             scope=self,
-            setting_type=SettingType.BOOLEAN
+            setting_type=GlobalSettingType.BOOLEAN
         )

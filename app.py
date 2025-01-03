@@ -15,7 +15,8 @@ omnilake = Application(
     create_hosted_zone=False,
     deployment_id=deployment_id,
     disable_docker_image_cache=True,
-    include_event_bus=True,
+    enable_exception_trap=True,
+    enable_event_bus=True,
     log_level='DEBUG',
 )
 

@@ -7,4 +7,4 @@ RUN poetry config virtualenvs.create false
 ADD . ${LAMBDA_TASK_ROOT}/omnilake
 RUN rm -rf /var/task/omnilake/.venv
 
-RUN cd ${LAMBDA_TASK_ROOT}/omnilake && poetry install --no-dev
+RUN cd ${LAMBDA_TASK_ROOT}/omnilake && poetry install --without dev

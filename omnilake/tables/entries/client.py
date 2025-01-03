@@ -73,14 +73,35 @@ class Entry(TableObject):
             attribute_type=TableObjectAttributeType.STRING_SET,
             description="The source resource names for the entry.",
         ),
-
-        TableObjectAttribute(
-            name="updated_on",
-            attribute_type=TableObjectAttributeType.DATETIME,
-            description="The date and time the entry was last updated.",
-            default=lambda: datetime.now(utc_tz),
-        ),
     ]
+
+    def __init__(self, entry_id: Optional[str] = None, char_count: Optional[int] = None,
+                 content_hash: Optional[str] = None, created_on: Optional[datetime] = None,
+                 effective_on: Optional[datetime] = None, last_accessed_on: Optional[datetime] = None,
+                 original_of_source: Optional[str] = None, sources: Optional[List[str]] = None):
+        """
+        Initialize an entry object.
+
+        Keyword arguments:
+        entry_id -- The unique identifier for the entry. Will auto-generate a uuid if none is provided.
+        char_count -- The number of characters in the entry.
+        content_hash -- The hash of the content of the entry.
+        effective_on -- The date and time the entry is effective on.
+        last_accessed_on -- The date and time the entry was last accessed.
+        original_of_source -- The source resource name the entry represents original content for.
+        sources -- The source resource names for the entry.
+        """
+
+        super().__init__(
+            entry_id=entry_id,
+            char_count=char_count,
+            content_hash=content_hash,
+            created_on=created_on,
+            effective_on=effective_on,
+            last_accessed_on=last_accessed_on,
+            original_of_source=original_of_source,
+            sources=sources,
+        )
 
     @staticmethod
     def calculate_hash(content: str) -> str:

@@ -1,11 +1,8 @@
-import json
-
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
 from datetime import datetime, UTC as utc_tz
 from enum import StrEnum
 from uuid import uuid4
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Generator, Optional
 
 from da_vinci.core.orm import (
     TableClient,
@@ -14,47 +11,6 @@ from da_vinci.core.orm import (
     TableObjectAttributeType,
     TableScanDefinition,
 )
-
-
-@dataclass
-class AIInvocationStatistics:
-    input_tokens: int
-    output_tokens: int
-    model_id: str
-
-    def to_dict(self):
-        return asdict(self)
-
-
-@dataclass
-class AIStatistics:
-    invocations: List[AIInvocationStatistics] = field(default_factory=list)
-
-    def __post_init__(self):
-        """
-        Post initialization
-        """
-        for invocation in self.invocations:
-            if not isinstance(invocation, AIInvocationStatistics):
-                if isinstance(invocation, dict):
-                    self.invocations = [AIInvocationStatistics(**invocation) for invocation in self.invocations]
-
-                else:
-                    raise ValueError(f"Expected type {AIInvocationStatistics.__name__} or Dict but got {type(invocation).__name__}")
-
-    @staticmethod
-    def exporter(value: 'AIStatistics') -> str:
-        """
-        Exports the AI invocation statistics to a JSON string
-        """
-        return json.dumps({'invocations': [stat.to_dict() for stat in value.invocations]})
-
-    @staticmethod
-    def importer(statistics: Dict) -> List['AIInvocationStatistics']:
-        """
-        Imports the AI invocation statistics from a JSON string
-        """
-        return AIStatistics(invocations=[AIInvocationStatistics(**stat) for stat in statistics['invocations']])
 
 
 class JobStatus(StrEnum):
@@ -84,22 +40,6 @@ class Job(TableObject):
 
     attributes = [
         TableObjectAttribute(
-            name='ai_statistics',
-            attribute_type=TableObjectAttributeType.JSON_STRING,
-            description='The AI invocation statistics about the job',
-            default=AIStatistics(),
-            custom_exporter=AIStatistics.exporter,
-            custom_importer=AIStatistics.importer,
-        ),
-
-        TableObjectAttribute(
-            name='child_jobs',
-            attribute_type=TableObjectAttributeType.STRING_LIST,
-            description='The list of child jobs',
-            default=[],
-        ),
-
-        TableObjectAttribute(
             name='created_on',
             attribute_type=TableObjectAttributeType.DATETIME,
             description='The timestamp of when the job was created',
@@ -118,6 +58,14 @@ class Job(TableObject):
             name='parent_job_id',
             attribute_type=TableObjectAttributeType.STRING,
             description='The parent job identifier',
+            optional=True,
+            default=None,
+        ),
+
+        TableObjectAttribute(
+            name='parent_job_type',
+            attribute_type=TableObjectAttributeType.STRING,
+            description='The parent job type',
             optional=True,
             default=None,
         ),
@@ -145,21 +93,6 @@ class Job(TableObject):
         ),
     ]
 
-    @staticmethod
-    def convert_job_shorthand(job_shorthand: str) -> Dict[str, str]:
-        """
-        Reads the job shorthand
-
-        Keyword arguments:
-        job_shorthand -- The job shorthand
-        """
-        job_type, job_id = job_shorthand.split('|')
-
-        return {
-            'job_type': job_type,
-            'job_id': job_id,
-        }
-
     def create_child(self, job_type: str) -> 'Job':
         """
         Creates a child job
@@ -170,9 +103,8 @@ class Job(TableObject):
         child_job = Job(
             job_type=job_type,
             parent_job_id=self.job_id,
+            parent_job_type=self.job_type,
         )
-
-        self.child_jobs.append(f'{job_type}|{child_job.job_id}')
 
         return child_job
 
@@ -258,10 +190,8 @@ class JobsClient(TableClient):
         job -- The job to fail
         failure_status_message -- The message to set if the job fails
         """
-        if job.parent_job_id:
-            parent_job_type, parent_job_id = job.convert_job_shorthand(job.parent_job_id).values()
-
-            parent_job = self.get(parent_job_type, parent_job_id)
+        if job.parent_job_id and job.parent_job_type:
+            parent_job = self.get(job_type=job.parent_job_type, job_id=job.parent_job_id)
 
             parent_job.status = JobStatus.FAILED
 
@@ -345,23 +275,3 @@ class JobsClient(TableClient):
         job -- The job to put
         """
         self.put_object(job)
-
-    def record_ai_invocation(self, job_type: str, job_id: str, statistics: AIInvocationStatistics) -> None:
-        """
-        Adds AI a single invocation's statistics to a job
-
-        THIS IS NOT A CONCURRENCY-SAFE OPERATION!!! DO NOT USE THIS METHOD WITH PARALLEL EXECUTIONS
-
-        YOU WILL LOSE DATA IF YOU DON'T PAY ATTENTION JIM!!!
-
-        Keyword arguments:
-        job_type -- The type of job
-        job_id -- The job identifier
-        statistics -- The AI statistic to add
-        """
-
-        job = self.get(job_type, job_id)
-
-        job.ai_statistics.invocations.append(statistics)
-
-        self.put(job)

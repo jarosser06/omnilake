@@ -1,20 +1,77 @@
 '''
 Handles the source API
 '''
-from typing import Dict, List, Optional
+import re
 
-from da_vinci.event_bus.client import EventPublisher
-from da_vinci.event_bus.event import Event as EventBusEvent
+from da_vinci.core.immutable_object import (
+    ObjectBody,
+    ObjectBodySchema,
+    SchemaAttribute,
+    SchemaAttributeType,
+)
 
-from omnilake.api.runtime.construct import ChildAPI, Route
+from omnilake.api.runtime.base import ChildAPI, Route
 
-from omnilake.internal_lib.event_definitions import ReapSourceBody
-from omnilake.internal_lib.job_types import JobType
 from omnilake.internal_lib.naming import SourceResourceName
 
-from omnilake.tables.jobs.client import Job, JobsClient
 from omnilake.tables.sources.client import Source, SourcesClient
 from omnilake.tables.source_types.client import SourceType, SourceTypesClient
+
+
+class AddSourceRequestSchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='source_type',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='source_arguments',
+            type=SchemaAttributeType.OBJECT,
+        ),
+    ]
+
+
+class CreateSourceTypeRequestSchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='name',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='required_fields',
+            type=SchemaAttributeType.STRING_LIST,
+        ),
+
+        SchemaAttribute(
+            name='description',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
+
+
+class DescribeSourceRequestSchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='source_id',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='source_type',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
+
+
+class DescribeSourceTypeRequestSchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='source_type',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
 
 
 class SourcesAPI(ChildAPI):
@@ -22,26 +79,26 @@ class SourcesAPI(ChildAPI):
         Route(
             path='/add_source',
             method_name='add_source',
+            request_body_schema=AddSourceRequestSchema,
         ),
         Route(
             path='/create_source_type',
             method_name='create_source_type',
-        ),
-        Route(
-            path='/delete_source',
-            method_name='delete_source',
+            request_body_schema=CreateSourceTypeRequestSchema,
         ),
         Route(
             path='/describe_source',
             method_name='describe_source',
+            request_body_schema=DescribeSourceRequestSchema,
         ),
         Route(
             path='/describe_source_type',
             method_name='describe_source_type',
+            request_body_schema=DescribeSourceTypeRequestSchema,
         )
     ]
 
-    def add_source(self, source_type: str, source_arguments: Dict):
+    def add_source(self, request_body: ObjectBody):
         """
         Add a source, idempotent
 
@@ -51,15 +108,19 @@ class SourcesAPI(ChildAPI):
         """
         source_types = SourceTypesClient()
 
+        source_type = request_body["source_type"]
+
         source_type_obj = source_types.get(source_type_name=source_type)
 
         if not source_type_obj:
             return self.respond(
-                body='Source type not found',
+                body={'message': 'Source type not found'},
                 status_code=404,
             )
 
         sources = SourcesClient()
+
+        source_arguments = request_body["source_arguments"]
 
         try:
             attribute_key = source_type_obj.generate_key(source_arguments=source_arguments)
@@ -103,16 +164,23 @@ class SourcesAPI(ChildAPI):
             status_code=201,
         )
 
-    def create_source_type(self, name: str, required_fields: List[str], description: Optional[str] = None):
+    def create_source_type(self, request_body: ObjectBody):
         """
         Create a source type
 
         Keyword arguments:
-        name -- The source type name
-        required_fields -- The required field names
-        description -- The description, optional
+        request_body -- The request body
         """
         source_types = SourceTypesClient()
+
+        name = request_body["name"]
+
+        # TODO: Regex validate that the name has no spaces, only alphanumeric and underscores
+        if not re.match(r'^\w+$', name):
+            return self.respond(
+                body={'message': 'Invalid source type name'},
+                status_code=400,
+            )
 
         existing = source_types.get(source_type_name=name)
 
@@ -121,6 +189,10 @@ class SourcesAPI(ChildAPI):
                 body='Source type already exists',
                 status_code=400,
             )
+
+        description = request_body.get("description")
+
+        required_fields = request_body.get("required_fields")
 
         source_type = SourceType(
             source_type_name=name,
@@ -135,50 +207,7 @@ class SourcesAPI(ChildAPI):
             status_code=201,
         )
 
-    def delete_source(self, source_type: str, source_id: str, force: bool = False):
-        """
-        Delete a source
-
-        Keyword arguments:
-        source_id -- The source ID
-        """
-        sources = SourcesClient()
-
-        source = sources.get(source_type=source_type, source_id=source_id)
-
-        if not source:
-            return self.respond(
-                body='Source not found',
-                status_code=404,
-            )
-
-        job = Job(job_type=JobType.DELETE_SOURCE)
-
-        jobs = JobsClient()
-
-        jobs.put(job)
-
-        event_publisher = EventPublisher()
-
-        event = EventBusEvent(
-            body=ReapSourceBody(
-                archive_id=source.source_id,
-                source_id=source.source_id,
-                source_type=source.source_type,
-                force=force,
-                job_id=job.job_id,
-            ).to_dict(),
-            event_type=ReapSourceBody.event_type,
-        )
-
-        event_publisher.submit(event)
-
-        return self.respond(
-            body=job.to_dict(json_compatible=True, exclude_attribute_names=['ai_statistics']),
-            status_code=201,
-        )
-
-    def describe_source(self, source_type: str, source_id: str):
+    def describe_source(self, request_body: ObjectBody):
         """
         Describe a source
 
@@ -188,11 +217,15 @@ class SourcesAPI(ChildAPI):
         """
         sources = SourcesClient()
 
+        source_id = request_body.get("source_id")
+
+        source_type = request_body.get("source_type")
+
         source = sources.get(source_type=source_type, source_id=source_id)
 
         if not source:
             return self.respond(
-                body='Source not found',
+                body={'message': 'Source not found'},
                 status_code=404,
             )
 
@@ -201,7 +234,7 @@ class SourcesAPI(ChildAPI):
             status_code=200,
         )
 
-    def describe_source_type(self, name: str):
+    def describe_source_type(self, request_body: ObjectBody):
         """
         Describe a source type
 
@@ -210,11 +243,13 @@ class SourcesAPI(ChildAPI):
         """
         source_types = SourceTypesClient()
 
+        name = request_body.get("source_type")
+
         source_type_obj = source_types.get(source_type_name=name)
 
         if not source_type_obj:
             return self.respond(
-                body='Source type not found',
+                body={'message': 'Source type not found'},
                 status_code=404,
             )
 

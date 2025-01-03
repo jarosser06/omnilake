@@ -1,13 +1,11 @@
 import json
 import logging
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import Optional
 
 import boto3
-
-from omnilake.tables.jobs.client import AIInvocationStatistics
 
 
 class ModelIDs(StrEnum):
@@ -16,6 +14,16 @@ class ModelIDs(StrEnum):
     """
     HAIKU = "anthropic.claude-3-haiku-20240307-v1:0"
     SONNET = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+
+@dataclass
+class AIInvocationStatistics:
+    input_tokens: int
+    output_tokens: int
+    model_id: str
+
+    def to_dict(self):
+        return asdict(self)
 
 
 @dataclass

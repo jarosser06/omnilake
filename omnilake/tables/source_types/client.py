@@ -1,5 +1,5 @@
 from datetime import datetime, UTC as utc_tz
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from uuid import uuid4
 
 from da_vinci.core.orm import (
@@ -7,7 +7,6 @@ from da_vinci.core.orm import (
     TableObject,
     TableObjectAttribute,
     TableObjectAttributeType,
-    TableScanDefinition,
 )
 
 
@@ -43,6 +42,28 @@ class SourceType(TableObject):
             description='The required fields for the source type',
         ),
     ]
+
+    def __init__(self, source_type_name: str, required_fields: list, created_on: Optional[Union[datetime, str]] = None,
+                 description: Optional[str] = None):
+        """
+        Initialize a source type.
+
+        Keyword arguments:
+        source_type_name -- The name of the source type.
+        required_fields -- The required fields for the source type.
+        description -- A description of the source type.
+        """
+        created_on_dt = created_on
+
+        if isinstance(created_on, str):
+            created_on_dt = datetime.fromisoformat(created_on)
+
+        super().__init__(
+            source_type_name=source_type_name,
+            required_fields=required_fields,
+            description=description,
+            created_on=created_on_dt,
+        )
 
     def generate_key(self, source_arguments: Dict, key_separator: str = '/') -> str:
         """

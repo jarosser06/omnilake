@@ -13,22 +13,35 @@ from da_vinci_cdk.stack import Stack
 from da_vinci_cdk.constructs.access_management import ResourceAccessRequest
 from da_vinci_cdk.constructs.service import SimpleRESTService
 
-from omnilake.tables.archives.stack import Archive, ArchiveTable
+from omnilake.tables.provisioned_archives.stack import Archive, ProvisionedArchivesTable
 from omnilake.tables.entries.stack import Entry, EntriesTable
-from omnilake.tables.information_requests.stack import (
-    InformationRequest,
-    InformationRequestsTable,
+from omnilake.tables.lake_requests.stack import (
+    LakeRequest,
+    LakeRequestsTable,
+)
+from omnilake.tables.registered_request_constructs.stack import (
+    RegisteredRequestConstruct as RegisteredRequestConstructObj,
+    RegisteredRequestConstructsTable,
 )
 from omnilake.tables.jobs.stack import Job, JobsTable
 from omnilake.tables.sources.stack import Source, SourcesTable
 from omnilake.tables.source_types.stack import SourceType, SourceTypesTable
 
-from omnilake.services.ingestion.stack import IngestionServiceStack
-from omnilake.services.responder.stack import ResponderEngineStack
-from omnilake.services.storage.basic.stack import BasicArchiveManagerStack
-from omnilake.services.storage.raw.stack import RawStorageManagerStack
-from omnilake.services.storage.vector.stack import VectorArchiveManagerStack
+from omnilake.services.ingestion.stack import LakeIngestionServiceStack
+from omnilake.services.raw_storage_manager.stack import LakeRawStorageManagerStack
+from omnilake.services.request_manager.stack import LakeRequestManagerStack
 
+# Include default constructs
+from omnilake.constructs.archives.basic.stack import LakeConstructArchiveBasicStack
+from omnilake.constructs.archives.vector.stack import (
+    LakeConstructArchiveVectorStack,
+)
+
+from omnilake.constructs.processors.recursive_summarization.stack import (
+    LakeConstructProcessorRecursiveSummarizationStack,
+)
+
+from omnilake.constructs.responders.simple.stack import LakeConstructResponderSimpleStack
 
 
 class OmniLakeAPIStack(Stack):
@@ -50,18 +63,23 @@ class OmniLakeAPIStack(Stack):
             app_name=app_name,
             app_base_image=app_base_image,
             architecture=architecture,
+            requires_event_bus=True,
+            requires_exceptions_trap=True,
             required_stacks=[
-                ArchiveTable,
-                BasicArchiveManagerStack,
                 EntriesTable,
-                InformationRequestsTable,
-                IngestionServiceStack,
+                LakeRequestsTable,
                 JobsTable,
-                RawStorageManagerStack,
-                ResponderEngineStack,
+                LakeConstructArchiveBasicStack,
+                LakeConstructArchiveVectorStack,
+                LakeConstructResponderSimpleStack,
+                LakeConstructProcessorRecursiveSummarizationStack,
+                LakeIngestionServiceStack,
+                LakeRequestManagerStack,
+                LakeRawStorageManagerStack,
+                ProvisionedArchivesTable,
+                RegisteredRequestConstructsTable,
                 SourcesTable,
                 SourceTypesTable,
-                VectorArchiveManagerStack,
             ],
             deployment_id=deployment_id,
             scope=scope,
@@ -97,7 +115,7 @@ class OmniLakeAPIStack(Stack):
                     policy_name='read',
                 ),
                 ResourceAccessRequest(
-                    resource_name=InformationRequest.table_name,
+                    resource_name=LakeRequest.table_name,
                     resource_type=ResourceType.TABLE,
                     policy_name='read_write',
                 ),
@@ -105,6 +123,11 @@ class OmniLakeAPIStack(Stack):
                     resource_name=Job.table_name,
                     resource_type=ResourceType.TABLE,
                     policy_name='read_write',
+                ),
+                ResourceAccessRequest(
+                    resource_name=RegisteredRequestConstructObj.table_name,
+                    resource_type=ResourceType.TABLE,
+                    policy_name='read',
                 ),
                 ResourceAccessRequest(
                     resource_name=Source.table_name,
@@ -118,6 +141,6 @@ class OmniLakeAPIStack(Stack):
                 ),
             ],
             scope=self,
-            service_name='omnilake-public-api',
-            timeout=Duration.minutes(5),
+            service_name='omnilake-private-api',
+            timeout=Duration.minutes(1),
         )

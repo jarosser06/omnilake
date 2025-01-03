@@ -1,184 +1,336 @@
-
-from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional, Union
+"""
+Internal Event definitions for the Omnilake service.
+"""
+from da_vinci.core.immutable_object import (
+    ObjectBodySchema,
+    SchemaAttribute,
+    SchemaAttributeType,
+)
 
 from omnilake.internal_lib.job_types import JobType
 
 
-@dataclass
-class GenericEventBody:
-    def to_dict(self):
-        return asdict(self)
-
-
-@dataclass
-class AddEntryBody(GenericEventBody):
-    content: str
-    sources: List[str]
-    job_id: str
-    archive_id: str = None
-    effective_on: str = None
-    original_source: str = None 
-    summarize: bool = False
-    title: str = None
-    job_type: str = JobType.ADD_ENTRY
-    event_type: str = 'add_entry'
-
-
-@dataclass
-class CreateBasicArchiveBody(GenericEventBody):
-    archive_id: str
-    description: str
-    job_id: str
-    retain_latest_originals_only: bool = True
-    storage_type: str = 'BASIC'
-    tag_hint_instructions: str = None
-    visibility: str = 'PUBLIC'
-    job_type: str = JobType.CREATE_ARCHIVE
-    event_type: str = 'create_basic_archive'
-
-
-@dataclass
-class CreateVectorArchiveBody(GenericEventBody):
-    archive_id: str
-    description: str
-    job_id: str
-    retain_latest_originals_only: bool = True
-    storage_type: str = 'VECTOR'
-    tag_hint_instructions: str = None
-    visibility: str = 'PUBLIC'
-    job_type: str = JobType.CREATE_ARCHIVE
-    event_type: str = 'create_vector_archive'
-
-
-@dataclass
-class GenerateEntryTagsBody(GenericEventBody):
+class AddEntryEventBodySchema(ObjectBodySchema):
     """
-    The body of the generate_entry_tags event.
+    The body of the omnilake_add_entry event.
+
+    Attributes:
+        archive_id (str): The ID of the archive to add the entry to.
+        content (str): The content of the entry.
+        effective_on (datetime): The effective date of the entry.
+        event_type (str): The type of the event.
+        job_id (str): The ID of the job.
+        job_type (str): The type of the job.
+        original_of_source (str): The original source of the entry.
+        sources (List[str]): The sources of the entry.
+        title (str): The title of the entry.
     """
-    archive_id: str
-    entry_id: str
-    content: str
-    parent_job_id: str
-    parent_job_type: Union[str, JobType]
-    callback_body: Dict = None
-    event_type: str = 'generate_entry_tags'
+    attributes = [
+        SchemaAttribute(
+            name='content',
+            type=SchemaAttributeType.STRING,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='destination_archive_id',
+            type=SchemaAttributeType.STRING,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='effective_on',
+            type=SchemaAttributeType.DATETIME,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='event_type',
+            type=SchemaAttributeType.STRING,
+            required=False,
+            default_value='omnilake_add_entry',
+        ),
+
+        SchemaAttribute(
+            name='job_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='job_type',
+            type=SchemaAttributeType.STRING,
+            required=False,
+            default_value=JobType.ADD_ENTRY,
+        ),
+
+        SchemaAttribute(
+            name='original_of_source',
+            type=SchemaAttributeType.STRING,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='sources',
+            type=SchemaAttributeType.STRING_LIST,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='title',
+            type=SchemaAttributeType.STRING,
+            required=False,
+        ),
+    ]
 
 
-@dataclass
-class IndexBasicEntryBody(GenericEventBody):
-    archive_id: str
-    entry_id: str
-    job_id: str = None
-    job_type: str = JobType.INDEX_ENTRY
-    effective_on: str = None
-    original_of_source: str = None
-    event_type: str = 'index_basic_entry'
+class LakeRequestInternalRequestEventBodySchema(ObjectBodySchema):
+    attributes = [
+        # The entry IDs to do something with, optional because Archives do not use them
+        SchemaAttribute(
+            name='entry_ids',
+            type=SchemaAttributeType.STRING_LIST,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='lake_request_id',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='parent_job_id',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='parent_job_type',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='request_body',
+            type=SchemaAttributeType.OBJECT,
+        ),
+    ]
 
 
-@dataclass
-class IndexVectorEntryBody(GenericEventBody):
-    archive_id: str
-    entry_id: str
-    job_id: str = None
-    job_type: str = JobType.INDEX_ENTRY
-    effective_on: str = None
-    event_type: str = 'index_vector_entry'
-    original_of_source: str = None
-    vector_store_id: str = None
+class LakeRequestInternalResponseEventBodySchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='ai_invocation_ids',
+            type=SchemaAttributeType.STRING_LIST,
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='entry_ids',
+            type=SchemaAttributeType.STRING_LIST,
+        ),
+
+        SchemaAttribute(
+            name='lake_request_id',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='event_type',
+            type=SchemaAttributeType.STRING,
+            default_value='omnilake_lake_request_internal_stage_response',
+            required=False,
+        ),
+    ]
 
 
-@dataclass
-class InformationRequestBody(GenericEventBody):
-    request_id: str
-    retrieval_requests: List[Dict] = None # This is also allowed because of the below reason lol
-    goal: str = None # This is allowed b/c of the hack ass way I re-use this event body
-    job_id: str = None
-    job_type: str = JobType.INFORMATION_REQUEST
-    request_stage: str = 'INITIAL'
-    resource_names: List[str] = None
-    responder_model_id: Optional[str] = None
-    responder_prompt: Optional[str] = None
-    responder_model_params: Optional[Dict] = None
-    summarization_algorithm: Optional[str] = None
-    summarization_prompt: Optional[str] = None
-    summarization_model_id: Optional[str] = None
-    summarization_model_params: Optional[Dict] = None
-    event_type: str = 'start_information_request'
+class LakeRequestLookupResponse(ObjectBodySchema):
+    '''
+    Event schema for lookup response.
+    '''
+    attributes = [
+        SchemaAttribute(
+            name='lake_request_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+        SchemaAttribute(
+            name='entry_ids',
+            type=SchemaAttributeType.STRING_LIST,
+            required=True,
+        ),
+        SchemaAttribute(
+            name="event_type",
+            type=SchemaAttributeType.STRING,
+            required=False,
+            default_value="omnilake_lake_lookup_response",
+        )
+    ]
 
 
-@dataclass
-class QueryRequestBody(GenericEventBody):
-    archive_id: str
-    max_entries: int
-    request_id: str
-    query_string: str
-    event_type: str = 'query_request'
-    parent_job_id: str = None
-    parent_job_type: str = None
-    prioritize_tags: List[str] = None
+class IndexEntryEventBodySchema(ObjectBodySchema):
+    """
+    The body of the omnilake_index_entry event.
+
+    No event_type attribute is defined here because it is dynamically managed through the
+    registry.
+    """
+    attributes = [
+        SchemaAttribute(
+            name='archive_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='entry_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='entry_details',
+            type=SchemaAttributeType.OBJECT,
+        ),
+
+        SchemaAttribute(
+            name='parent_job_id',
+            type=SchemaAttributeType.STRING,
+        ),
+
+        SchemaAttribute(
+            name='parent_job_type',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
 
 
-@dataclass
-class QueryCompleteBody(GenericEventBody):
-    query_id: str
-    resource_names: List[str] = None
-    event_type: str = 'query_complete'
+class LakeChainRequestEventBodySchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='chain_request_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='job_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='job_type',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='requests',
+            type=SchemaAttributeType.OBJECT_LIST,
+        ),
+
+        SchemaAttribute(
+            name='event_type',
+            type=SchemaAttributeType.STRING,
+            default_value='omnilake_lake_chain_request',
+            required=False,
+        )
+    ]
 
 
-@dataclass
-class ReapEntryBody(GenericEventBody):
-    archive_id: str
-    entry_id: str
-    job_id: str
-    job_type: str = JobType.DELETE_ENTRY
-    force: bool = False
-    event_type: str = 'reap_entry'
+class LakeCompletionEventBodySchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='event_type',
+            type=SchemaAttributeType.STRING,
+            default_value='omnilake_lake_request_completion',
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='lake_request_id',
+            type=SchemaAttributeType.STRING,
+        ),
+    ]
 
 
-@dataclass
-class ReapSourceBody(GenericEventBody):
-    archive_id: str
-    source_id: str
-    source_type: str
-    job_id: str
-    job_type: str = JobType.DELETE_SOURCE
-    force: bool = False
-    event_type: str = 'reap_source'
+class LakeRequestEventBodySchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='job_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='job_type',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='lake_request_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
+
+        SchemaAttribute(
+            name='lookup_instructions',
+            type=SchemaAttributeType.OBJECT_LIST,
+        ),
+
+        SchemaAttribute(
+            name='processing_instructions',
+            type=SchemaAttributeType.OBJECT,
+        ),
+
+        SchemaAttribute(
+            name='response_config',
+            type=SchemaAttributeType.OBJECT,
+            default_value={},
+            required=False,
+        ),
+
+        SchemaAttribute(
+            name='event_type',
+            type=SchemaAttributeType.STRING,
+            default_value='omnilake_lake_request',
+            required=False,
+        )
+    ]
 
 
-@dataclass
-class SaveEntryBody(GenericEventBody):
-    archive_id: str
-    content: str
-    entry_id: str
-    job_id: str
-    job_type: str = JobType.ADD_ENTRY # This is the parent job type
-    event_type: str = 'save_entry'
+class ProvisionArchiveEventBodySchema(ObjectBodySchema):
+    attributes = [
+        SchemaAttribute(
+            name='archive_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
 
+        SchemaAttribute(
+            name='configuration',
+            type=SchemaAttributeType.OBJECT,
+            required=False,
+            default_value={},
+        ),
 
-@dataclass
-class UpdateEntryBody(GenericEventBody):
-    entry_id: str
-    content: str
-    job_id: str
-    job_type: str = JobType.UPDATE_ENTRY
-    event_type: str = 'update_entry'
+        SchemaAttribute(
+            name='description',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
 
+        SchemaAttribute(
+            name='job_id',
+            type=SchemaAttributeType.STRING,
+            required=True,
+        ),
 
-@dataclass
-class VSQueryBody(GenericEventBody):
-    archive_id: str
-    query_id: str
-    query_str: str
-    parent_job_id: str
-    parent_job_type: str
-    vector_store_ids: List[str]
-    event_type: str = 'vs_query'
+        SchemaAttribute(
+            name='job_type',
+            type=SchemaAttributeType.STRING,
+            required=False,
+            default_value=JobType.CREATE_ARCHIVE,
+        ),
+    ]
 
-
-@dataclass
-class VectorStoreTagRecalculation(GenericEventBody):
-    archive_id: str
-    vector_store_id: str
-    event_type: str = 'recalculate_vector_tags'
