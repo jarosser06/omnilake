@@ -3,6 +3,8 @@ import time
 from logging import getLogger
 from typing import Optional
 
+import pypdf
+
 from omnilake.client.client import OmniLake
 from omnilake.client.request_definitions import (
     AddEntry,
@@ -48,7 +50,7 @@ class RefreshIndexCommand(Command):
             archive = CreateArchive(
                 archive_id=archive_name,
                 configuration=VectorArchiveConfiguration(),
-                description=f'Archive for source code directory {archive_name}',
+                description=f'Archive for local file directory {archive_name} from somone\'s computer :shrug:',
             )
 
             self.omnilake.request(archive)
@@ -74,13 +76,52 @@ class RefreshIndexCommand(Command):
 
             self.omnilake.request(source_type)
 
-            print('Source type "source_code_file" created')
+            print('Source type "local_file" created')
         except Exception as e:
             if "Source type already exists" in str(e):
-                print('Source type "source_code_file" already exists')
+                print('Source type "local_file" already exists')
 
             else:
                 raise
+
+    def _index_file(self, archive_name: str, file_contents: str, file_name: str, file_path: str,
+                    page_number: Optional[int] = None):
+        """
+        Index a file
+
+        Keyword arguments:
+        archive_name -- the name of the archive
+        file_contents -- the contents of the file
+        file_name -- the name of the file
+        file_path -- the path of the file
+        page_number -- the page number of the file (default None)
+        """
+        full_file_name = file_name
+
+        if page_number:
+            full_file_name = f'{file_name}.{page_number}'
+
+        source = AddSource(
+            source_type='local_file',
+            source_arguments={
+                'file_name': full_file_name,
+                'file_extension': file_name.split('.')[-1],
+                'full_file_path': file_path,
+            },
+        )
+
+        source_result = self.omnilake.request(source)
+
+        source_rn = source_result.response_body['resource_name']
+
+        entry = AddEntry(
+            content=file_contents,
+            sources=[source_rn],
+            destination_archive_id=archive_name,
+            original_of_source=source_rn,
+        )
+
+        self.omnilake.request(entry)
 
     def run(self, args):
         print('Indexing...')
@@ -106,27 +147,34 @@ class RefreshIndexCommand(Command):
 
             file_contents = collected_file.read_bytes()
 
-            source = AddSource(
-                source_type='local_file',
-                source_arguments={
-                    'file_name': collected_file.name,
-                    'file_extension': collected_file.name.split('.')[-1],
-                    'full_file_path': relative_to_base,
-                },
+            if collected_file.name.endswith('.pdf'):
+                print('Detected PDF file, extracting text...')
+
+                pdf_reader = pypdf.PdfReader(stream=collected_file)
+
+                print('Splitting PDF into pages...')
+
+                for page_number, page in enumerate(pdf_reader.pages):
+                    self._index_file(
+                        archive_name=archive_name,
+                        file_contents=page.extract_text(),
+                        file_name=collected_file.name,
+                        file_path=relative_to_base,
+                        page_number=page_number,
+                    )
+
+                    print(f'Added {relative_to_base} page {page_number}')
+
+                continue
+
+            decoded_contents = file_contents.decode(encoding='utf-8', errors='ignore')
+
+            self._index_file(
+                archive_name=archive_name,
+                file_contents=decoded_contents,
+                file_name=collected_file.name,
+                file_path=relative_to_base,
             )
-
-            source_result = self.omnilake.request(source)
-
-            source_rn = source_result.response_body['resource_name']
-
-            entry = AddEntry(
-                content=file_contents.decode(),
-                sources=[source_rn],
-                destination_archive_id=archive_name,
-                original_of_source=source_rn,
-            )
-
-            self.omnilake.request(entry)
 
             print(f'Added {relative_to_base}')
 

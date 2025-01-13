@@ -13,6 +13,7 @@ boto3 = "^1.35.10"
 da-vinci = { git = "https://github.com/jarosser06/da-vinci", develop = true, subdirectory = "da_vinci", tag = "2024.12.5" }
 
 [tool.poetry.group.dev.dependencies]
+pypdf = "^5.1.0"
 da-vinci-cdk = { git = "https://github.com/jarosser06/da-vinci", develop = true, subdirectory = "da_vinci-cdk", tag = "2024.12.5" }
 
 [build-system]
