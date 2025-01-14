@@ -1,6 +1,13 @@
 OmniLake
 ========
-OmniLake is a Python/AWS Framework that enables the development of enterprise-grade AI applications with built-in data lineage and traceability. It provides a comprehensive solution for managing unstructured information while addressing common AI adoption challenges.
+OmniLake is a Python/AWS Framework that enables the development of enterprise-grade AI applications with built-in data
+lineage and traceability. It provides a comprehensive solution for managing unstructured information while addressing common
+AI adoption challenges. 
+
+![OmniLake Flow Diagram](assets/OmniLake%20Workflow%20Diagram.jpg)
+
+***Content Support Note**: OmniLake currently only supports text-based storage/retrieval/processing, support for storing and indexing image-based types
+is on the roadmap but not prioritized at this time.*
 
 ### Key Features
 
@@ -9,7 +16,7 @@ OmniLake is a Python/AWS Framework that enables the development of enterprise-gr
 - Standardized data management with full control
 - Rapid deployment capabilities with minimal initial setup
 - Cost-effective scaling with pay-as-you-go model
-- Advanced semantic search and retrieval
+- Semantic search and retrieval
 - Customizable for specific business needs
 
 ### Core Benefits
@@ -20,34 +27,21 @@ OmniLake is a Python/AWS Framework that enables the development of enterprise-gr
 - Provides enterprise-grade data management
 - Maintains control over data
 
-### ⚠️ Experimental Feature Warning ️⚠️
-
-The automatic archive segmentation feature (which attempts to split and categorize information into purpose-built vector stores) is very experimental. While promising for knowledge organization, it's not yet production-ready and should be used with caution in non-critical environments.
-
-Components
-----------
-
-### API Service
-Handles external interactions and manages the public-facing API.
-
-### Ingestion Service
-Processes new data entries and prepares content for storage.
-
-### Storage Service
-Manages vector stores and data persistence, including rebalancing and optimization.
-
-### Responder Service
-Handles information requests, generating AI-powered responses based on stored data.
 
 Key Concepts
 ------------
 
 ### Definitions
 
-- **Archives**: Logical groupings of related data
+- **Archives**: Provide the system ability to retrieve data for use during a Lake Request. Can be standard "Index" type storage like the Basic and Vector built-ins, or they can be direct read-only bridges to other systems such as CRMs, Wikis, or
+even general web page retrieval.
+- **Construct**: Lake constructs are the re-usable components that enable the system to lookup data, process the data, and provide responses. Archives, Processors, and Responders are all examples of OmniLake constructs.
 - **Entries**: Individual pieces of content within archives
-- **Sources**: Tracking of data provenance
 - **Jobs**: Management of asynchronous processing tasks
+- **Processors**: These constructs support intaking one or more entries from the system, processing them in a specific way, and then providing an entry for the final response.
+- **Responders**: The final stage of a Lake Request, the responder is responsible for formulating (or not in the case of Direct) a final response using the processed results.
+- **Sources**: Tracking of data provenance
+- **Source Types**: The declared type of source, defining all of the attributes required for a source. A source type must be declared before sources of that type can be created.
 
 ### Technology
 

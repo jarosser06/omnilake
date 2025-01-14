@@ -77,7 +77,7 @@ def final_responder(event: Dict, context: Dict) -> None:
 
     jobs = JobsClient()
 
-    parent_job = jobs.get(job_type=event_body.get("parent_job_type"), job_id=event_body.get("parent_job_id"))
+    parent_job = jobs.get(job_type=event_body["parent_job_type"], job_id=event_body["parent_job_id"])
 
     final_resp_job = parent_job.create_child(job_type="CONSTRUCT_RESPONDER_DIRECT_FINAL_RESPONSE")
 

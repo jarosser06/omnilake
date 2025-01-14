@@ -10,7 +10,6 @@ from omnilake.client.request_definitions import (
     GetEntry,
     DescribeLakeRequest,
     SubmitLakeRequest,
-    #SimpleResponseConfig,
     SummarizationProcessor,
     VectorLookup,
 )
