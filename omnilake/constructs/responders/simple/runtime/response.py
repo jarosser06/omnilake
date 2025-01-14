@@ -26,9 +26,9 @@ from omnilake.internal_lib.event_definitions import (
 
 from omnilake.internal_lib.clients import AIStatisticSchema, AIStatisticsCollector
 
-from omnilake.tables.provisioned_archives.client import ArchivesClient
 from omnilake.tables.entries.client import Entry, EntriesClient
 from omnilake.tables.jobs.client import JobsClient
+from omnilake.tables.provisioned_archives.client import ArchivesClient
 from omnilake.tables.registered_request_constructs.client import (
     RegisteredRequestConstructsClient,
     RequestConstructType,
@@ -125,7 +125,7 @@ _FN_NAME = "omnilake.constructs.responders.simple.response"
 
 
 @fn_event_response(exception_reporter=ExceptionReporter(), logger=Logger(_FN_NAME),
-                   function_name=_FN_NAME)
+                   function_name=_FN_NAME, handle_callbacks=True)
 def final_responder(event: Dict, context: Dict) -> None:
     """
     Final responder function
@@ -258,9 +258,9 @@ def final_responder(event: Dict, context: Dict) -> None:
         event_type = _get_index_endpoint(archive_id=destination_archive_id)  
 
         event_publisher.submit(
-                event=source_event.next_event(
-                    event_type=event_type,
-                    body=index_body.to_dict()
-                ),
-                delay=5 # Delay to give S3 time to catch up
-            )
+            event=source_event.next_event(
+                event_type=event_type,
+                body=index_body.to_dict()
+            ),
+            delay=5 # Delay to give S3 time to catch up
+        )

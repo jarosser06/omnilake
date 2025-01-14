@@ -11,6 +11,7 @@ from omnilake.client.construct_request_definitions import (
     VectorArchiveConfiguration,
     BasicLookup,
     DirectEntryLookup,
+    DirectResponseConfig,
     DirectSourceLookup,
     RelatedRequestEntriesLookup,
     RelatedRequestSourcesLookup,
@@ -694,7 +695,6 @@ class LakeRequest(RequestBody):
         RequestBodyAttribute(
             'response_config',
             attribute_type=RequestAttributeType.OBJECT,
-            supported_request_body_types=SimpleResponseConfig,
             default={},
             optional=True,
         )
@@ -702,7 +702,7 @@ class LakeRequest(RequestBody):
 
     def __init__(self, lookup_instructions: List[Union[Dict, BasicLookup, DirectEntryLookup, DirectSourceLookup, RelatedRequestEntriesLookup, RelatedRequestSourcesLookup, VectorLookup]],
                     processing_instructions: Union[Dict, SummarizationProcessor],
-                    response_config: Optional[Union[Dict, SimpleResponseConfig]] = None):
+                    response_config: Optional[Union[Dict, DirectResponseConfig, SimpleResponseConfig]] = None):
             """
             Initialize the LakeRequest Object
     

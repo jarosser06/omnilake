@@ -6,10 +6,11 @@ from typing import Optional
 from omnilake.client.client import OmniLake
 from omnilake.client.request_definitions import (
     DescribeJob,
+    DirectResponseConfig,
     GetEntry,
     DescribeLakeRequest,
     SubmitLakeRequest,
-    SimpleResponseConfig,
+    #SimpleResponseConfig,
     SummarizationProcessor,
     VectorLookup,
 )
@@ -114,9 +115,7 @@ class QuestionCommand(Command):
                 goal=goal,
                 include_source_metadata=True,
             ),
-            response_config=SimpleResponseConfig(
-                goal=goal,
-            ),
+            response_config=DirectResponseConfig(),
         )
 
         request_id = self._execute_request_and_wait(request=request)

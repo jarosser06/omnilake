@@ -14,7 +14,6 @@ from da_vinci_cdk.stack import Stack
 
 from da_vinci_cdk.constructs.access_management import ResourceAccessRequest
 from da_vinci_cdk.constructs.base import resource_namer
-from da_vinci_cdk.constructs.global_setting import GlobalSetting, GlobalSettingType
 from da_vinci_cdk.constructs.event_bus import EventBusSubscriptionFunction
 
 from da_vinci_cdk.framework_stacks.event_bus.stack import EventBusStack
@@ -29,19 +28,11 @@ from omnilake.tables.registered_request_constructs.cdk import (
 )
 from omnilake.tables.sources.stack import SourcesTable
 
-from omnilake.services.ai_statistics_collector.stack import AIStatisticsCollectorStack
-
-from omnilake.services.raw_storage_manager.stack import LakeRawStorageManagerStack
-
 # Local Construct Imports
-from omnilake.constructs.responders.simple.default_prompts import (
-    DEFAULT_RESPONSE_PROMPT,
-)
-
-from omnilake.constructs.responders.simple.schemas import RequestBodySchema
+from omnilake.constructs.responders.direct.schemas import RequestBodySchema
 
 
-class LakeConstructResponderSimpleStack(Stack):
+class LakeConstructResponderDirectStack(Stack):
     def __init__(self, app_name: str, app_base_image: str, architecture: str,
                  deployment_id: str, stack_name: str, scope: Construct):
         """
@@ -60,11 +51,9 @@ class LakeConstructResponderSimpleStack(Stack):
             app_base_image=app_base_image,
             architecture=architecture,
             required_stacks=[
-                AIStatisticsCollectorStack,
                 EntriesTable,
                 EventBusStack,
                 JobsTable,
-                LakeRawStorageManagerStack,
                 ProvisionedArchivesTable,
                 SourcesTable,
             ],
@@ -79,8 +68,8 @@ class LakeConstructResponderSimpleStack(Stack):
 
         self.registered_request_construct_obj = RegisteredRequestConstructObj(
             registered_construct_type=RequestConstructType.RESPONDER,
-            registered_type_name='SIMPLE',
-            description='Simple responder for OmniLake.',
+            registered_type_name='DIRECT',
+            description='Direct responder for OmniLake, takes the processor response and sends it back as the final response. If more than one entry is sent from the processor, it will fail the response.',
             schemas={
                 "respond": RequestBodySchema.to_dict(),
             },
@@ -88,32 +77,17 @@ class LakeConstructResponderSimpleStack(Stack):
 
         self.response_generator = EventBusSubscriptionFunction(
             base_image=self.app_base_image,
-            construct_id='simple-response-generator',
+            construct_id='direct-response-generator',
             event_type=self.registered_request_construct_obj.get_operation_event_name('respond'),
-            description='Generates a simple response for the request, given a stated goal.',
+            description='Passes the response from the processor directly through, validating the processor only provided a single final response.',
             entry=self.runtime_path,
             index='response.py',
             handler='final_responder',
-            function_name=resource_namer('responder-simple-handler', scope=self),
-            managed_policies=[
-                ManagedPolicy.from_managed_policy_arn(
-                    scope=self,
-                    id='final-responder-amazon-bedrock-full-access',
-                    managed_policy_arn='arn:aws:iam::aws:policy/AmazonBedrockFullAccess'
-                ),
-            ],
+            function_name=resource_namer('responder-direct-handler', scope=self),
             resource_access_requests=[
                 ResourceAccessRequest(
                     resource_name='event_bus',
                     resource_type=ResourceType.ASYNC_SERVICE,
-                ),
-                ResourceAccessRequest(
-                    resource_name='ai_statistics_collector',
-                    resource_type=ResourceType.REST_SERVICE,
-                ),
-                ResourceAccessRequest(
-                    resource_name='raw_storage_manager',
-                    resource_type=ResourceType.REST_SERVICE,
                 ),
                 ResourceAccessRequest(
                     resource_type=ResourceType.TABLE,
@@ -133,15 +107,6 @@ class LakeConstructResponderSimpleStack(Stack):
             ],
             scope=self,
             timeout=Duration.minutes(5),
-        )
-
-        self.default_response_prompt = GlobalSetting(
-            description='The default prompt for responses.',
-            namespace='omnilake::simple_responder',
-            setting_key='default_response_prompt',
-            setting_value=DEFAULT_RESPONSE_PROMPT,
-            scope=self,
-            setting_type=GlobalSettingType.STRING
         )
 
         # Register the Construct

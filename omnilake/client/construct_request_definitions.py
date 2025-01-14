@@ -437,6 +437,35 @@ class SummarizationProcessor(RequestBody):
 
 
 ## Response Configurations
+class DirectResponseConfig(RequestBody):
+    """
+    Pass through responses from the processor directly. Useful if there is no need to
+    further modify the response.
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'destination_archive_id',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'response_type',
+            immutable_default='DIRECT',
+        )
+    ]
+
+    def __init__(self, destination_archive_id: Optional[str] = None):
+        """
+        Initialize the DirectResponseConfig
+
+        Keyword Arguments:
+        destination_archive_id -- The optional archive_id to store the response in
+        """
+        super().__init__(
+            destination_archive_id=destination_archive_id,
+        )
+
+
 class SimpleResponseConfig(RequestBody):
     """
     This is a response configuration, it describes how the lake should craft it's response.

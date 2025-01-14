@@ -41,6 +41,7 @@ from omnilake.constructs.processors.recursive_summarization.stack import (
     LakeConstructProcessorRecursiveSummarizationStack,
 )
 
+from omnilake.constructs.responders.direct.stack import LakeConstructResponderDirectStack
 from omnilake.constructs.responders.simple.stack import LakeConstructResponderSimpleStack
 
 
@@ -71,6 +72,7 @@ class OmniLakeAPIStack(Stack):
                 JobsTable,
                 LakeConstructArchiveBasicStack,
                 LakeConstructArchiveVectorStack,
+                LakeConstructResponderDirectStack,
                 LakeConstructResponderSimpleStack,
                 LakeConstructProcessorRecursiveSummarizationStack,
                 LakeIngestionServiceStack,
