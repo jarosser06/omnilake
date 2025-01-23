@@ -1,5 +1,5 @@
 '''
-Primary API handler for the OmniLake API
+Primary API handler for the OmniLake Private API
 '''
 import json
 import logging

@@ -219,10 +219,10 @@ def handler(event, context):
             return
 
         construct_definition = _get_construct(
-                operation_name='process',
-                registered_construct_type=RequestConstructType.PROCESSOR,
-                registered_construct_name=raw_object_body.get("processor_type"),
-            )
+            operation_name='process',
+            registered_construct_type=RequestConstructType.PROCESSOR,
+            registered_construct_name=raw_object_body.get("processor_type"),
+        )
 
         next_stage_body = ObjectBody(
             body=raw_object_body,
