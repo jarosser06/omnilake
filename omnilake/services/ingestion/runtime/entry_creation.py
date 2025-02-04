@@ -156,9 +156,9 @@ def _set_source_latest_content_entry_id(entry_effective_date: datetime, entry_id
         if entry_effective_date.tzinfo is None:
             entry_effective_date = entry_effective_date.replace(tzinfo=utc_tz)
 
-        latest_entry_effective_date = latest_entry.effective_on.replace(tzinfo=utc_tz)
-
         if latest_entry:
+            latest_entry_effective_date = latest_entry.effective_on.replace(tzinfo=utc_tz)
+
             if latest_entry_effective_date < entry_effective_date:
                 logging.debug(f"Setting latest entry ID for source {source_rn} to {entry_id}")
 
@@ -250,7 +250,7 @@ def handler(event: Dict, context: Dict):
 
         effective_on = effective_on
 
-        if not effective_on:
+        if effective_on:
             effective_on = datetime.fromisoformat(effective_on)
 
         entry = Entry(
