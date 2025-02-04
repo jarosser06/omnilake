@@ -250,7 +250,7 @@ def handler(event: Dict, context: Dict):
 
         effective_on = effective_on
 
-        if effective_on:
+        if not effective_on:
             effective_on = datetime.fromisoformat(effective_on)
 
         entry = Entry(
