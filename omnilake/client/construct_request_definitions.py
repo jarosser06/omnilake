@@ -625,3 +625,53 @@ class SimpleResponseConfig(RequestBody):
             prompt=prompt,
             destination_archive_id=destination_archive_id,
         )
+
+
+class WrapResponseConfig(RequestBody):
+    """
+    This is a response configuration for the WRAP response_type, it describes how the lake should craft it's response.
+    """
+    attribute_definitions = [
+        RequestBodyAttribute(
+            'append_text',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'destination_archive_id',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'prepend_text',
+            optional=True,
+        ),
+
+        RequestBodyAttribute(
+            'response_type',
+            immutable_default='WRAP',
+        ),
+
+        RequestBodyAttribute(
+            'separator',
+            optional=True,
+        ),
+    ]
+
+    def __init__(self, append_text: Optional[str] = None, destination_archive_id: Optional[str] = None,
+                 prepend_text: Optional[str] = None, separator: Optional[str] = None):
+        """
+        Initialize the WrapResponseConfig
+
+        Keyword Arguments:
+        append_text -- The text to append to the response
+        destination_archive_id -- The optional archive_id to store the response in
+        prepend_text -- The text to prepend to the response
+        separator -- The separator to use for the response. Defaults to '\n\n'
+        """
+        super().__init__(
+            append_text=append_text,
+            destination_archive_id=destination_archive_id,
+            prepend_text=prepend_text,
+            separator=separator,
+        )
