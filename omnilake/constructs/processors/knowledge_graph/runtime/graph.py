@@ -87,7 +87,14 @@ class Graph:
 
             return
 
-        source, relationship, target = line.split("|")
+        try:
+            source, relationship, target = line.split("|")
+
+        # Don't want one bad line to break an entire run, log and ignore the failure
+        except ValueError as val_err:
+            logging.warning(f'Line "{line}" did not contain the expected information, receieved error: {val_err}')
+
+            return
 
         self.add(source=source, target=target, relationship=relationship)
 

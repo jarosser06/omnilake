@@ -53,7 +53,7 @@ Rules:
 - Include quantifiable information when available (ages, years, amounts)
 
 Requirements:
-- Output only triples, no other text
+- Output ONLY triples, NO OTHER TEXT
 - One triple per line
 - First element = subject node
 - Middle element = relationship/action
@@ -148,7 +148,7 @@ def handler(event: Dict, context: Dict):
 
         logging.debug(f'Summary prompt: {prompt}')
 
-        ai = AI(default_model_id=ModelIDs.HAIKU)
+        ai = AI(default_model_id=ModelIDs.SONNET)
 
         summarization_result = ai.invoke(prompt=prompt, max_tokens=8000, model_id=event_body.get("model_id"))
 
