@@ -17,6 +17,8 @@ from da_vinci.core.immutable_object import (
 
 from da_vinci.exception_trap.client import ExceptionReporter
 
+from omnilake.internal_lib.secrets import SSMSecretManager
+
 
 class InvalidPathError(ValueError):
     def __init__(self, path: str):
@@ -53,7 +55,10 @@ class ChildAPI:
         if route_value.request_body_schema:
             logging.info(f"Request body expected for route {path}")
 
-            obj_body = ObjectBody(body=kwargs, schema=route_value.request_body_schema)
+            secret_mgr = SSMSecretManager()
+
+            obj_body = ObjectBody(body=kwargs, schema=route_value.request_body_schema,
+                                  secret_masking_fn=secret_mgr.mask_secret)
 
             return getattr(self, route_value.method_name)(obj_body)
 
