@@ -13,6 +13,10 @@ from da_vinci_cdk.stack import Stack
 from da_vinci_cdk.constructs.access_management import ResourceAccessRequest
 from da_vinci_cdk.constructs.service import SimpleRESTService
 
+from omnilake.cdk.managed_policies import (
+    SSMSecretManagerManagedPolicy,
+)
+
 from omnilake.tables.provisioned_archives.stack import Archive, ProvisionedArchivesTable
 from omnilake.tables.entries.stack import Entry, EntriesTable
 from omnilake.tables.lake_chain_requests.stack import (
@@ -108,11 +112,14 @@ class OmniLakeAPIStack(Stack):
 
         self.runtime_path = path.join(base_dir, 'runtime')
 
+        sec_mgr_pol = SSMSecretManagerManagedPolicy(self, 'api-ssm-secret-access', self.app_name, self.deployment_id)
+
         self.api_handler = SimpleRESTService(
             base_image=self.app_base_image,
             entry=self.runtime_path,
             index='api',
             handler='handler',
+            managed_policies=[sec_mgr_pol.managed_policy],
             resource_access_requests=[
                 ResourceAccessRequest(
                     resource_name='event_bus',

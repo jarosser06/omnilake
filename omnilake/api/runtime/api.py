@@ -33,8 +33,6 @@ def handler(event: Dict, context: Dict) -> Dict:
     Returns:
     dict -- The response
     """
-    logging.debug(f'Recieved request: {event}')
-
     parent_api = ParentAPI(
         child_apis=[
             ArchiveAPI,
@@ -52,6 +50,6 @@ def handler(event: Dict, context: Dict) -> Dict:
     if body:
         kwargs = json.loads(body)
 
-    logging.debug(f'Executing path: {event["rawPath"]} with kwargs: {kwargs}')
+    logging.debug(f'Executing path: {event["rawPath"]}')
 
     return parent_api.execute_path(path=event['rawPath'], **kwargs)

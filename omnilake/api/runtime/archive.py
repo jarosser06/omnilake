@@ -17,6 +17,7 @@ from da_vinci.event_bus.event import Event as EventBusEvent
 from omnilake.api.runtime.base import ChildAPI, Route
 
 from omnilake.internal_lib.event_definitions import ProvisionArchiveEventBodySchema
+from omnilake.internal_lib.secrets import SSMSecretManager
 
 from omnilake.tables.jobs.client import Job, JobsClient
 from omnilake.tables.provisioned_archives.client import (
@@ -125,8 +126,14 @@ class ArchiveAPI(ChildAPI):
                 logging.debug(f"Found provisioning schema: {provisioning_schema.to_dict()} ... validating configuration")
 
                 try:
+                    secret_mgr = SSMSecretManager()
+
                     # Initialize the object body, validating the configuration
-                    ObjectBody(body=configuration, schema=provisioning_schema)
+                    ObjectBody(
+                        body=configuration,
+                        schema=provisioning_schema,
+                        secret_masking_fn=secret_mgr.mask_secret,
+                    )
 
                 except InvalidObjectSchemaError as schema_error:
                     return self.respond(
