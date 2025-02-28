@@ -156,6 +156,7 @@ class ChainReference:
     SUPPORTED_REFERENCE_TYPES = [
         "response_id", # Replaces the reference with the Lake Request ID of the referenced response
         "response_body", # Replaces the reference with the content of the referenced response
+        "response_entry_id", # Replaces the reference with the entry ID of the referenced response
     ]
 
     def __init__(self, reference_str: str):
@@ -217,6 +218,15 @@ class ChainReference:
 
         if self.reference_request_type == "response_id":
             return request_id
+
+        elif self.reference_request_type == "response_entry_id":
+            lake_requests_client = LakeRequestsClient()
+
+            lake_request = lake_requests_client.get(lake_request_id=request_id)
+
+            logging.debug(f"Loaded lake request: {lake_request}")
+
+            return lake_request.response_entry_id
 
         return self._load_response_body(request_id=request_id)
 
